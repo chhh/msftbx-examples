@@ -3,12 +3,77 @@
  */
 package msftbx.examples;
 
+import umich.ms.datatypes.LCMSDataSubset;
+import umich.ms.datatypes.scan.IScan;
+import umich.ms.datatypes.scan.StorageStrategy;
+import umich.ms.datatypes.scancollection.impl.ScanCollectionDefault;
+import umich.ms.fileio.exceptions.FileParsingException;
+import umich.ms.fileio.filetypes.LCMSDataSource;
+import umich.ms.fileio.filetypes.mzml.MZMLFile;
+import umich.ms.fileio.filetypes.mzxml.MZXMLFile;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.TreeMap;
+
 public class App {
-    public String getGreeting() {
-        return "Hello world.";
+    public static void main(String[] args) throws FileParsingException {
+        Path path = parseArgs(args);
+
+        // Preparations, first create data source to fill a scan collection
+        LCMSDataSource<?> source = createSource(path);
+
+        // This is the data structure used to store scans and to navigate around the run, so far it's empty
+        ScanCollectionDefault scans = new ScanCollectionDefault();
+
+        // Configure it - softly reference spectral data, make it reclaimable by GC
+        scans.setDefaultStorageStrategy(StorageStrategy.SOFT);
+
+        // Set it to automatically re-parse spectra from the file if spectra were not
+        // yet parsed or were reclaimed to make auto-loading work you'll need to use
+        // IScan#fetchSpectrum() method instead of IScan#getSpectrum()
+        scans.isAutoloadSpectra(true); // this is actually the default
+
+        // Set our mzXML file as the data source for this scan collection
+        scans.setDataSource(source);
+
+        // Set number of threads for multi-threaded parsing.
+        // null means use as many cores as reported by Runtime.getRuntime().availableProcessors()
+        source.setNumThreadsForParsing(null); // this is actually the default
+
+        // Load meta-data about scans in the whole run. If we ever invoke IScan#fetchSpectrum()
+        // on a spectrum, for which the spectrum has not been parsed, it will be
+        // obtained from disk automatically. And because of Soft referencing, the GC
+        // will be able to reclaim it.
+        scans.loadData(LCMSDataSubset.STRUCTURE_ONLY);
+
+        // let's traverse the data-structure
+        TreeMap<Integer, IScan> scanMap = scans.getMapNum2scan(); // that's one of the available indexes of the data
+        scanMap.values().stream()
+                .filter(scan -> scan.getMsLevel() == 2) // filter leaving only MS2 scans
+                .forEachOrdered(ms2 -> {                // for each MS2 perform some action
+                    System.out.printf("Scan: [%s]. Precursor: target m/z [{%.4f}], target mono m/z [{%.4f}]\n",
+                            ms2.toString(), ms2.getPrecursor().getMzTarget(), ms2.getPrecursor().getMzTargetMono());
+                });
     }
 
-    public static void main(String[] args) {
-        System.out.println(new App().getGreeting());
+    static Path parseArgs(String[] args) {
+        if (args.length < 1) {
+            System.err.println("Pass 1 argument - path to LCMS file");
+            System.exit(1);
+        }
+        return Paths.get(args[0]);
+    }
+
+    static LCMSDataSource<?> createSource(Path p) {
+        LCMSDataSource<?> source;
+        if (p.toString().toLowerCase().endsWith("mzml")) {
+            source = new MZMLFile(p.toString());
+        } else if (p.toString().toLowerCase().endsWith("mzxml")) {
+            source = new MZXMLFile(p.toString());
+        } else {
+            throw new IllegalArgumentException("File not supported: " + p.toString());
+        }
+        return source;
     }
 }

@@ -3,12 +3,27 @@
  */
 package msftbx.examples;
 
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import umich.ms.fileio.exceptions.FileParsingException;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class AppTest {
-    @Test void appHasAGreeting() {
-        App classUnderTest = new App();
-        assertNotNull(classUnderTest.getGreeting(), "app should have a greeting");
+    @Test void testAppArgs() {
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            App.main(new String[]{"c:\\tmp"});
+        });
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> {
+            App.main(new String[]{"asd"});
+        });
+    }
+
+    @Test @Disabled("Need to change path to some existing file")
+    void testAppRuns() throws FileParsingException {
+        String path = "D:\\ms-data\\thermo\\PXD015650\\M205_3_0718_wa2sNrp1_1.mzML";
+        App.main(new String[]{path});
     }
 }
