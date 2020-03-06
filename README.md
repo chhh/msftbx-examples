@@ -1,5 +1,6 @@
 # MSFTBX Examples
-An example java app built with Gradle that prints some information about MS2 scans.
+Companion repo for MSFTBX - mass spectrometry data readers library: http://github.com/chhh/msftbx.  
+**Provides a complete example java app built with Gradle that prints some information about MS2 scans.**
 
 ## Running it
 You don't need to have gradle or any libraries installed.
@@ -18,7 +19,11 @@ Alternatively you can tell gradle to build the app and create launch scripts for
 ./gradlew clean install
 ```
 This command will produce output in `build/install/msftbx-examples`. Run scripts will be in `bin` sub-directory,
-and all the jar dependencies will be in `lib` sub-directory.
+and all the jar dependencies will be in `lib` sub-directory.  
+You just start the script for your OS from the `bin` directory.
+
+By modifying the `build.gradle` file it's also easy to package the
+whole application in a single fat jar file. See [`gradle-shadow`](https://imperceptiblethoughts.com/shadow/) plugin.
 
 ### Run from Intellij Idea
 You can just import the project into Intellij IDEA and click the green Run triangle icon next to `main()` method of `msftbx.examples.App`.
